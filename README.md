@@ -36,7 +36,10 @@
 ### 前置条件
 
 ```bash
-# 安装 lark-cli
+# 安装 lark-cli (https://github.com/larksuite/cli)
+npm install -g @anthropic-ai/lark-cli
+
+# 认证
 # https://github.com/larksuite/cli
 
 # 认证（需要 docs/base/im/wiki 权限）
