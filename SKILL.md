@@ -317,3 +317,53 @@ Live Replay 直播归档表（多期）
 | 触发 | 直播结束后自动或手动 | 用户主动要求 |
 | 写入 | 直播归档表 + 金句表 | 知识卡片表 + 课程文档 |
 | 不做 | 不碰知识卡片 | 不做即时归档 |
+
+
+---
+
+## 故障自查
+
+当命令返回空结果或报错时，按以下顺序排查：
+
+### 1. 检查 lark-cli 版本
+```bash
+lark-cli --version
+# 如果不是最新版，升级：
+npm install -g @larksuite/cli@latest
+```
+版本过旧可能导致 API 响应解析异常（如搜索返回空但实际有数据）。
+
+### 2. 检查认证状态
+```bash
+lark-cli auth status
+# 确认 tokenStatus 为 valid，scope 包含所需权限
+# 如果过期，重新授权：
+lark-cli auth login --scope "<missing_scope>"
+```
+
+### 3. 检查应用后台权限
+打开飞书开发者后台确认 scope 已开通（两层都要有）：
+```
+https://open.feishu.cn/app/<your_app_id>/permission
+```
+- 用户授权（auth login）✅
+- 应用后台开通 scope ✅
+- 两层都要有，缺一不可
+
+### 4. 查看官方文档
+```bash
+# 查看命令参数
+lark-cli <command> --help
+
+# 查看 API schema
+lark-cli schema <resource>.<method>
+```
+官方文档：https://github.com/larksuite/cli
+
+### 5. 常见坑
+- `docs +search` 返回字段是 `data.results` 不是 `data.items`
+- `docs +search` 需要知识库成员权限才能搜到知识库内容
+- `minutes` 需要单独的 `minutes:minutes:readonly` scope
+- `base +table-create --fields` 字段过多时可能只创建部分，需逐个 `+field-create` 补建
+- `docs +update --markdown` 必须用相对路径（`@./file.md`），不支持绝对路径
+
