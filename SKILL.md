@@ -229,3 +229,46 @@ lark-cli 命令组合：
 | 使用场景 | 个人效率 | 社区运营（服务一群人） |
 | 价值主张 | 操作飞书更方便 | 让沉睡内容产生二次价值 |
 | 创新点 | CLI 包装 | 知识复利——从工具到资产复用 |
+
+---
+
+## Plan B: 无搜索权限时的替代方案（wiki nodes list 遍历）
+
+当 `docs +search` 返回空结果（用户未被加入知识库搜索范围）时，使用以下替代流程：
+
+### Step 0: 遍历知识库节点获取文档目录
+
+```bash
+# 列出知识库所有顶层节点
+lark-cli wiki nodes list --params '{"space_id":"<space_id>","page_size":"50"}' --format json
+
+# 读取目录页文档，提取所有 mention-doc 引用（子文档列表）
+lark-cli docs +fetch --doc <root_doc_token>
+# 从 markdown 中用正则提取: <mention-doc token="xxx">标题</mention-doc>
+```
+
+### Step 1: 关键词匹配筛选
+
+AI 根据用户画像生成关键词列表，对文档标题做匹配打分：
+
+```python
+user_keywords = ["claude", "效率", "产品", "agent", "skill", "入门"]
+for doc in all_docs:
+    score = sum(1 for k in user_keywords if k in doc.title.lower())
+# 取 score > 0 的文档，按 score 降序排列
+```
+
+### Step 2: 读取匹配文档并提取知识点
+
+```bash
+# 逐篇读取高分文档
+lark-cli docs +fetch --doc <matched_doc_token>
+```
+
+后续流程（提取知识点 → 写入 Base → 生成学习路径）与 Plan A 相同。
+
+### 优先级
+
+1. **优先尝试 `docs +search`**（Plan A）— 更快更精准
+2. **search 返回空 → fallback 到 `wiki nodes list`**（Plan B）— 任何人都能用
+3. Agent 应自动判断并切换，不需要用户干预
