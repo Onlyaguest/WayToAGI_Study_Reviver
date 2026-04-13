@@ -169,6 +169,16 @@ lark-cli 命令组合：
 └── LICENSE           # MIT
 ```
 
+
+## 知识库接入：双路径机制
+
+| 路径 | 方式 | 优点 | 前提 |
+|------|------|------|------|
+| Plan A | `docs +search` | 精准搜索全知识库 | 需要知识库搜索权限 |
+| Plan B | `wiki nodes list` + 关键词匹配 | 任何人都能用 | 只需阅读权限 |
+
+Agent 优先尝试 Plan A，搜索返回空自动 fallback 到 Plan B。用户不需要关心。
+
 ## 依赖
 
 - [lark-cli](https://github.com/larksuite/cli) >= 1.0.5
