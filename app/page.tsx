@@ -202,18 +202,34 @@ export default function Home() {
         <section className="chat-panel">
           <div className="chat-box">
             <div className="chat-scroll">
-              {chatHistory.map((msg, i) => (
-                <div key={i} className={`chat-msg chat-${msg.type}`}>
-                  <div className="msg-body">
-                    {msg.content.split('\n').map((line, j) => (
+            {chatHistory.map((msg, i) => (
+              <div key={i} className={`chat-msg chat-${msg.type}`}>
+                <div className="msg-body">
+                  {msg.content.split('\n').map((line, j) => {
+                    const urlRegex = /(https?:\/\/[^\s]+)/g
+                    if (urlRegex.test(line)) {
+                      const parts = line.split(urlRegex)
+                      return (
+                        <span key={j}>
+                          {parts.map((part, k) => 
+                            urlRegex.test(part) ? 
+                              <a key={k} href={part} target="_blank" className="msg-link">{part}</a> : 
+                              part
+                          )}
+                          {j < msg.content.split('\n').length - 1 && <br />}
+                        </span>
+                      )
+                    }
+                    return (
                       <span key={j}>
                         {line}
                         {j < msg.content.split('\n').length - 1 && <br />}
                       </span>
-                    ))}
-                  </div>
+                    )
+                  })}
                 </div>
-              ))}
+              </div>
+            ))}
             </div>
 
             {/* Input */}
@@ -603,6 +619,17 @@ export default function Home() {
           background: var(--text);
           color: #fff;
           border-bottom-right-radius: 5px;
+        }
+
+        .msg-link {
+          color: var(--accent);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          word-break: break-all;
+        }
+
+        .chat-user .msg-link {
+          color: #7dd3fc;
         }
 
         /* Input row */
