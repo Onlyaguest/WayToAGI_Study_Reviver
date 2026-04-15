@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "app/api/search/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/generate-doc/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}
