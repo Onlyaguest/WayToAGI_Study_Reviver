@@ -1,0 +1,83 @@
+[
+  {
+    "id": "ai-beginner",
+    "emoji": "🌱",
+    "title": "零基础 AI 入门",
+    "subtitle": "不会编程也没关系。5 天，每天 1 小时",
+    "audience": "对 AI 完全没概念的纯小白",
+    "duration": "5天 × 1小时/天",
+    "docUrl": "https://www.feishu.cn/docx/IoR9dngXtoiLN5xUpI1ca11XnPc",
+    "tags": ["零基础", "入门", "AI工具", "不会编程"],
+    "days": [
+      {"day": 1, "title": "AI 到底是什么？", "desc": "一文打通 AI 底层逻辑"},
+      {"day": 2, "title": "动手试试 AI 工具", "desc": "即梦 AI 基础操作入门"},
+      {"day": 3, "title": "AI 能帮你做什么", "desc": "AI 产品经理入门指南"},
+      {"day": 4, "title": "加入社区一起学", "desc": "WAYtoAGI 学习路径与课程"},
+      {"day": 5, "title": "试试 AI 编程", "desc": "n8n 零基础入门，拖拽搭工作流"}
+    ]
+  },
+  {
+    "id": "claude-code",
+    "emoji": "💻",
+    "title": "一周入门 Claude Code",
+    "subtitle": "会一点 Python，每天 2 小时",
+    "audience": "想用 AI 写代码提效的开发者",
+    "duration": "7天 × 2小时/天",
+    "docUrl": "https://www.feishu.cn/docx/CflwdhZc2omYpyxRyovckPj8nbf",
+    "tags": ["Claude Code", "编程", "Python", "开发者"],
+    "days": [
+      {"day": 1, "title": "搞懂底层逻辑", "desc": "从 LLM 到 Agent 一次打通"},
+      {"day": 2, "title": "安装 + 跑通", "desc": "保姆级入门，不学命令行版"},
+      {"day": 3, "title": "5 个必学技巧", "desc": "3 条铁律告别代码屎山"},
+      {"day": 4, "title": "做一个真实项目", "desc": "文科生小白也能上手"},
+      {"day": 5, "title": "插件和高效工作流", "desc": "5 分钟上手 Claude Code 插件"},
+      {"day": 6, "title": "看直播 + 案例", "desc": "Claude Code 系列直播课"},
+      {"day": 7, "title": "总结 + 下一步", "desc": "10 万字中文教程索引"}
+    ]
+  },
+  {
+    "id": "ai-product",
+    "emoji": "🚀",
+    "title": "AI 产品创业者",
+    "subtitle": "有想法没技术，2 周做出 MVP",
+    "audience": "想做自己的 AI 产品的创业者",
+    "duration": "2周 × 5小时/周",
+    "docUrl": "https://www.feishu.cn/docx/NgVadG77go3VWJxlpfQcQvQnnxf",
+    "tags": ["产品", "创业", "MVP", "商业"],
+    "days": [
+      {"day": 1, "title": "Week 1: 理解 AI 产品逻辑", "desc": "拆解成功案例，学产品设计"},
+      {"day": 2, "title": "Week 2: 动手做 MVP", "desc": "用 Claude Code 做出来"}
+    ]
+  },
+  {
+    "id": "agent-arch",
+    "emoji": "🧠",
+    "title": "Agent 架构深度学习",
+    "subtitle": "有编程基础，2 周深入多智能体",
+    "audience": "想深入理解 Agent 架构的技术人",
+    "duration": "2周 × 2小时/天",
+    "docUrl": "https://www.feishu.cn/docx/RP93dlkN1oNah3xcagWcZoIDnle",
+    "tags": ["Agent", "多智能体", "架构", "Harness"],
+    "days": [
+      {"day": 1, "title": "Week 1: Agent 基础概念", "desc": "核心组件 + 8 个等级 + 5 种协作模式"},
+      {"day": 2, "title": "Week 2: Harness 工程实战", "desc": "工具设计 + 搭多 Agent 系统"}
+    ]
+  },
+  {
+    "id": "community-ops",
+    "emoji": "📣",
+    "title": "社区运营 AI 提效",
+    "subtitle": "管群做活动写内容，5 天让 AI 帮你",
+    "audience": "社区运营者",
+    "duration": "5天 × 1小时/天",
+    "docUrl": "https://www.feishu.cn/docx/Ye42dtcuxokjmbxRyr6cLKLNnkD",
+    "tags": ["运营", "社区", "自动化", "效率"],
+    "days": [
+      {"day": 1, "title": "AI 能帮运营做什么", "desc": "34 个飞书 CLI 玩法"},
+      {"day": 2, "title": "整理会议纪要", "desc": "Study Reviver + Live Replay"},
+      {"day": 3, "title": "搭自动化工作流", "desc": "n8n 零基础入门"},
+      {"day": 4, "title": "用 AI 做内容", "desc": "Claude Code 保姆级入门"},
+      {"day": 5, "title": "规划 AI 运营体系", "desc": "飞书 CLI Best Practice"}
+    ]
+  }
+]
