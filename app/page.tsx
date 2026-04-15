@@ -105,13 +105,20 @@ export default function Home() {
           body: JSON.stringify({ topic, level: answers.level, time: answers.time, style: answers.style })
         })
         const data = await res.json()
-        setResults(data.results)
+        
+        if (data.error) {
+          addMessage('bot', `抱歉，搜索遇到了问题：${data.error}`)
+          setResults([])
+        } else {
+          const results = data.results || []
+          setResults(results)
+          addMessage('bot', `🎯 找到了！为你精选了 ${results.length} 篇最相关的文章：`)
+        }
         setStep('results')
-        addMessage('bot', `🎯 找到了！为你精选了 ${data.results?.length || 0} 篇最相关的文章：`)
       } catch (e) {
+        addMessage('bot', '抱歉，网络连接失败，请稍后重试。')
         setResults([])
         setStep('results')
-        addMessage('bot', '抱歉，搜索遇到了一些问题，请稍后重试。')
       }
     }
   }
