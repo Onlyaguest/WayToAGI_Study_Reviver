@@ -318,8 +318,6 @@ export default function Home() {
       </main>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&display=swap');
-
         :root {
           --bg: #f6f5f2;
           --bg-warm: #f0eeea;
