@@ -313,8 +313,6 @@ export default function Home() {
         <footer className="site-footer">
           <span>Study Reviver</span>
           <span className="f-dot">·</span>
-          <a href="https://github.com/Onlyaguest/WayToAGI_Study_Reviver">GitHub</a>
-          <span className="f-dot">·</span>
           <a href="https://waytoagi.feishu.cn/wiki/QPe5w5g7UisbEkkow8XcDmOpn8e">WaytoAGI 知识库</a>
         </footer>
       </main>
