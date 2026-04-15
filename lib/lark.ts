@@ -31,9 +31,22 @@ async function getTenantToken(): Promise<string> {
 async function fetchWikiNodes(spaceId: string, parentToken: string = '', pageToken: string = '') {
   const token = await getTenantToken()
   const url = new URL(`https://open.feishu.cn/open-apis/wiki/v2/spaces/${spaceId}/nodes`)
-  if (parentToken) url.searchParams.set('parent_node_token', parentToken)
-  else url.searchParams.set('page_token', 'root')
-  if (pageToken) url.searchParams.set('page_token', pageToken)
+  
+  // Feishu API logic:
+  // To get root nodes: Do NOT pass parent_node_token.
+  // To get children: Pass parent_node_token.
+  // Pagination: Pass page_token (if available from previous response).
+  
+  if (parentToken) {
+    url.searchParams.set('parent_node_token', parentToken)
+  }
+  
+  // If it's the first page, page_token is usually empty/undefined.
+  // If we have a token, use it.
+  if (pageToken) {
+    url.searchParams.set('page_token', pageToken)
+  }
+
   url.searchParams.set('page_size', '50')
 
   const res = await fetch(url.toString(), {
@@ -51,28 +64,35 @@ async function crawlWikiNodes(spaceId: string, parentToken: string = '', depth: 
   let allNodes: any[] = []
   let pageToken = ''
   let hasMore = true
+  let firstFetch = true
 
   while (hasMore) {
-    const data = await fetchWikiNodes(spaceId, parentToken, pageToken)
+    const data = await fetchWikiNodes(spaceId, parentToken, firstFetch ? '' : pageToken)
+    firstFetch = false
+    
     if (data.code !== 0) {
-      console.warn('Failed to fetch nodes:', data.msg)
+      console.warn('Failed to fetch nodes:', data.msg, data.code)
       break
     }
 
     const items = data.data?.items || []
     allNodes.push(...items)
+    
     hasMore = data.data?.has_more
     pageToken = data.data?.page_token
 
-    if (hasMore) await new Promise(r => setTimeout(r, 100)) // Rate limit safety
+    if (hasMore) await new Promise(r => setTimeout(r, 200)) // Rate limit safety
   }
 
-  // Recursively fetch children
-  for (const node of allNodes) {
-    if (node.has_child) {
-      const children = await crawlWikiNodes(spaceId, node.node_token, depth + 1, maxDepth)
-      allNodes = [...allNodes, ...children]
-      await new Promise(r => setTimeout(r, 100))
+  // Recursively fetch children if they have any
+  // Only fetch children if we are not at max depth
+  if (depth < maxDepth) {
+    for (const node of allNodes) {
+      if (node.has_child) {
+        const children = await crawlWikiNodes(spaceId, node.node_token, depth + 1, maxDepth)
+        allNodes = [...allNodes, ...children]
+        await new Promise(r => setTimeout(r, 200)) // Rate limit safety between recursive calls
+      }
     }
   }
 
@@ -82,6 +102,8 @@ async function crawlWikiNodes(spaceId: string, parentToken: string = '', depth: 
 export async function searchDocs(query: string) {
   try {
     console.log(`Starting deep crawl for space: ${WIKI_SPACE_ID}, query: "${query}"`)
+    
+    // Start crawling from root
     const allNodes = await crawlWikiNodes(WIKI_SPACE_ID, '', 0, 2)
     console.log(`Crawled ${allNodes.length} total nodes.`)
 
@@ -90,8 +112,7 @@ export async function searchDocs(query: string) {
       ? query.split(' OR ').map(k => k.trim().toLowerCase()) 
       : [lowerQuery]
 
-    // Filter nodes that match keywords in title or summary
-    // Note: Feishu wiki nodes API doesn't return summary, we'll use title only.
+    // Filter nodes that match keywords in title
     const matched = allNodes.filter((item: any) => {
       const title = (item.title || '').toLowerCase()
       return keywords.some(k => title.includes(k))
