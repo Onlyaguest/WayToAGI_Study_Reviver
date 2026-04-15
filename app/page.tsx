@@ -29,11 +29,16 @@ export default function Home() {
   const [docUrl, setDocUrl] = useState('')
   const [loadingMsg, setLoadingMsg] = useState('')
   const [mounted, setMounted] = useState(false)
+  const allTopics = ['Skill', 'Hermes', 'OpenClaw', 'AI 视频', 'AI 绘画', 'Claude Code', 'Vibe Coding', 'MCP', 'GEO', 'Harness']
+  const [displayTopics, setDisplayTopics] = useState(allTopics.slice(0, 5))
   const [chatHistory, setChatHistory] = useState<Array<{type: 'bot' | 'user', content: string}>>([
     { type: 'bot', content: '你好呀！我是你的学习路径导航员。\n告诉我你想学什么？' }
   ])
 
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    setMounted(true)
+    setDisplayTopics([...allTopics].sort(() => Math.random() - 0.5).slice(0, 5))
+  }, [])
 
   const addMessage = (type: 'bot' | 'user', content: string) => {
     setChatHistory(prev => [...prev, { type, content }])
@@ -302,19 +307,16 @@ export default function Home() {
           <div className="chips-area">
             <div className="chips-label">试试这些</div>
             <div className="chips-row">
-              {(() => {
-                const topics = ['Skill', 'Hermes', 'OpenClaw', 'AI 视频', 'AI 绘画', 'Claude Code', 'Vibe Coding', 'MCP', 'GEO', 'Harness']
-                return [...topics].sort(() => Math.random() - 0.5).slice(0, 5).map((t, i) => (
+              {displayTopics.map((t, i) => (
                   <button
                     key={t}
                     onClick={() => setTopic(t)}
                     className="chip"
                     style={{ animationDelay: `${i * 60}ms` }}
-                  >
-                    {t}
-                  </button>
-                ))
-              })()}
+                >
+                  {t}
+                </button>
+              ))}
             </div>
           </div>
         )}
