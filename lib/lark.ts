@@ -19,132 +19,152 @@ async function getTenantToken(): Promise<string> {
   })
 
   const text = await res.text()
-  console.log('Token Response Status:', res.status)
-  
   let data
-  try {
-    data = JSON.parse(text)
-  } catch (e) {
-    console.error('Failed to parse token response:', text.substring(0, 200))
-    throw new Error(`获取 Token 失败: Invalid JSON response`)
-  }
-
-  if (data.code !== 0) {
-    console.error('Token Error:', data.msg)
-    throw new Error(`获取 Token 失败: ${data.msg}`)
-  }
+  try { data = JSON.parse(text) } catch { throw new Error('Token fetch failed: Invalid JSON') }
+  if (data.code !== 0) throw new Error(`Token fetch failed: ${data.msg}`)
 
   cachedToken = data.tenant_access_token
   tokenExpireTime = Date.now() + (data.expire - 300) * 1000
   return cachedToken
 }
 
+async function fetchWikiNodes(spaceId: string, parentToken: string = '', pageToken: string = '') {
+  const token = await getTenantToken()
+  const url = new URL(`https://open.feishu.cn/open-apis/wiki/v2/spaces/${spaceId}/nodes`)
+  if (parentToken) url.searchParams.set('parent_node_token', parentToken)
+  else url.searchParams.set('page_token', 'root')
+  if (pageToken) url.searchParams.set('page_token', pageToken)
+  url.searchParams.set('page_size', '50')
+
+  const res = await fetch(url.toString(), {
+    method: 'GET',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+  })
+  
+  const text = await res.text()
+  try { return JSON.parse(text) } catch { return { code: 1, data: { items: [], has_more: false } } }
+}
+
+async function crawlWikiNodes(spaceId: string, parentToken: string = '', depth: number = 0, maxDepth: number = 2): Promise<any[]> {
+  if (depth > maxDepth) return []
+
+  let allNodes: any[] = []
+  let pageToken = ''
+  let hasMore = true
+
+  while (hasMore) {
+    const data = await fetchWikiNodes(spaceId, parentToken, pageToken)
+    if (data.code !== 0) {
+      console.warn('Failed to fetch nodes:', data.msg)
+      break
+    }
+
+    const items = data.data?.items || []
+    allNodes.push(...items)
+    hasMore = data.data?.has_more
+    pageToken = data.data?.page_token
+
+    if (hasMore) await new Promise(r => setTimeout(r, 100)) // Rate limit safety
+  }
+
+  // Recursively fetch children
+  for (const node of allNodes) {
+    if (node.has_child) {
+      const children = await crawlWikiNodes(spaceId, node.node_token, depth + 1, maxDepth)
+      allNodes = [...allNodes, ...children]
+      await new Promise(r => setTimeout(r, 100))
+    }
+  }
+
+  return allNodes
+}
+
 export async function searchDocs(query: string) {
   try {
-    const token = await getTenantToken()
-    console.log('Searching Feishu docs in space:', WIKI_SPACE_ID, 'with query:', query)
+    console.log(`Starting deep crawl for space: ${WIKI_SPACE_ID}, query: "${query}"`)
+    const allNodes = await crawlWikiNodes(WIKI_SPACE_ID, '', 0, 2)
+    console.log(`Crawled ${allNodes.length} total nodes.`)
 
-    // 方案 B: 使用 Wiki 节点遍历 API，更稳定且不需要搜索权限
-    // 获取知识库根节点
-    const nodesRes = await fetch(`https://open.feishu.cn/open-apis/wiki/v2/spaces/${WIKI_SPACE_ID}/nodes`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+    const lowerQuery = query.toLowerCase()
+    const keywords = query.includes(' OR ') 
+      ? query.split(' OR ').map(k => k.trim().toLowerCase()) 
+      : [lowerQuery]
+
+    // Filter nodes that match keywords in title or summary
+    // Note: Feishu wiki nodes API doesn't return summary, we'll use title only.
+    const matched = allNodes.filter((item: any) => {
+      const title = (item.title || '').toLowerCase()
+      return keywords.some(k => title.includes(k))
     })
 
-    const nodesText = await nodesRes.text()
-    let nodesData
-    try { nodesData = JSON.parse(nodesText) } catch { 
-      console.error('Failed to parse nodes response:', nodesText.substring(0, 500))
-      return [] 
-    }
+    console.log(`Matched ${matched.length} nodes.`)
 
-    if (nodesData.code !== 0) {
-      console.error('Nodes API Error:', nodesData.msg)
-      return []
-    }
-
-    const items = nodesData.data?.items || []
-    console.log(`Found ${items.length} wiki nodes. Filtering by query: "${query}"`)
-
-    // 简单过滤：标题或摘要包含关键词
-    const lowerQuery = query.toLowerCase()
-    return items
-      .filter((item: any) => {
-        const title = (item.title || '').toLowerCase()
-        // 支持多关键词匹配 (OR 关系)
-        const keywords = query.includes(' OR ') ? query.split(' OR ').map(k => k.trim().toLowerCase()) : [lowerQuery]
-        return keywords.some(k => title.includes(k))
-      })
-      .map((item: any, i: number) => {
-        const url = item.url || `https://waytoagi.feishu.cn/wiki/${item.node_token}`
-        return {
-          id: i,
-          title: item.title || '未命名文档',
-          url: url,
-          update: item.obj_edit_time ? new Date(parseInt(item.obj_edit_time) * 1000).toISOString().split('T')[0] : '',
-          summary: `来自知识库节点 · ${item.obj_type === 'docx' ? '文档' : '目录'}`
-        }
-      })
+    return matched.map((item: any, i: number) => ({
+      id: i,
+      title: item.title || '未命名文档',
+      url: item.url || `https://waytoagi.feishu.cn/wiki/${item.node_token}`,
+      update: item.obj_edit_time ? new Date(parseInt(item.obj_edit_time) * 1000).toISOString().split('T')[0] : '',
+      summary: `类型: ${item.obj_type === 'docx' ? '文档' : '目录'} · 来自知识库`
+    }))
   } catch (error) {
     console.error('searchDocs error:', error)
     throw error
   }
 }
 
-export async function createDocWithContent(title: string, contentBlocks: Array<{type: string, text: string, level?: number}>) {
+export async function createDocWithContent(title: string, results: any[]) {
   try {
     const token = await getTenantToken()
-
     console.log('Creating Feishu doc:', title)
+
     const docRes = await fetch('https://open.feishu.cn/open-apis/docx/v1/documents', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ title })
     })
-
-    const docText = await docRes.text()
-    let docData
-    try { docData = JSON.parse(docText) } catch { throw new Error('Invalid doc create response') }
-    
-    if (docData.code !== 0) throw new Error(`创建文档失败: ${docData.msg}`)
+    const docData = await docRes.json()
+    if (docData.code !== 0) throw new Error(`Create doc failed: ${docData.msg}`)
 
     const docId = docData.data.document.document_id
     const rootBlockId = docData.data.document.root_block_id
 
-    const children = contentBlocks.map(block => {
-      if (block.type === 'heading') {
-        return {
-          block_type: 2,
-          heading: { elements: [{ text_run: { content: block.text, text_element_style: {} } }], level: block.level || 1 }
+    // Build content blocks
+    const blocks: any[] = [
+      { block_type: 1, text: { elements: [{ text_run: { content: `📚 为你精选了 ${results.length} 篇相关文章：`, text_element_style: {} } }], style: {} } },
+      { block_type: 1, text: { elements: [{ text_run: { content: '', text_element_style: {} } }], style: {} } } // Empty line
+    ]
+
+    // Add each result
+    results.forEach((r: any, i: number) => {
+      blocks.push({
+        block_type: 2,
+        heading: { level: 2, elements: [{ text_run: { content: `${i + 1}. ${r.title}`, text_element_style: {} } }] }
+      })
+      blocks.push({
+        block_type: 4,
+        text: {
+          elements: [
+            { text_run: { content: '🔗 链接: ', text_element_style: {} } },
+            { text_run: { content: r.url, text_element_style: { link: { url: r.url } } } }
+          ],
+          style: {}
         }
+      })
+      if (r.summary) {
+        blocks.push({
+          block_type: 4,
+          text: { elements: [{ text_run: { content: `📝 ${r.summary}`, text_element_style: {} } }], style: {} }
+        })
       }
-      return {
-        block_type: 1,
-        text: { elements: [{ text_run: { content: block.text, text_element_style: {} } }], style: {} }
-      }
+      blocks.push({ block_type: 1, text: { elements: [{ text_run: { content: '', text_element_style: {} } }], style: {} } })
     })
 
-    const appendRes = await fetch(`https://open.feishu.cn/open-apis/docx/v1/documents/${docId}/blocks/${rootBlockId}/children`, {
+    // Append blocks
+    await fetch(`https://open.feishu.cn/open-apis/docx/v1/documents/${docId}/blocks/${rootBlockId}/children`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ children })
+      body: JSON.stringify({ children: blocks })
     })
-
-    if (WIKI_SPACE_ID) {
-      try {
-        await fetch(`https://open.feishu.cn/open-apis/wiki/v2/spaces/${WIKI_SPACE_ID}/nodes`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ obj_type: 'docx', obj_token: docId })
-        })
-      } catch (e) { console.warn('Wiki node create failed', e) }
-    }
 
     return `https://waytoagi.feishu.cn/docx/${docId}`
   } catch (error) {
