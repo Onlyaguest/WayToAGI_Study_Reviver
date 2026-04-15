@@ -295,16 +295,19 @@ export default function Home() {
           <div className="chips-area">
             <div className="chips-label">试试这些</div>
             <div className="chips-row">
-              {['Hermes Agent', 'AI 社群写作', 'AI 绘画', 'Prompt 工程', 'AI 自动化'].map((t, i) => (
-                <button
-                  key={t}
-                  onClick={() => setTopic(t)}
-                  className="chip"
-                  style={{ animationDelay: `${i * 60}ms` }}
-                >
-                  {t}
-                </button>
-              ))}
+              {(() => {
+                const topics = ['Skill', 'Hermes', 'OpenClaw', 'AI 视频', 'AI 绘画', 'Claude Code', 'Vibe Coding', 'MCP', 'GEO', 'Harness']
+                return [...topics].sort(() => Math.random() - 0.5).slice(0, 5).map((t, i) => (
+                  <button
+                    key={t}
+                    onClick={() => setTopic(t)}
+                    className="chip"
+                    style={{ animationDelay: `${i * 60}ms` }}
+                  >
+                    {t}
+                  </button>
+                ))
+              })()}
             </div>
           </div>
         )}
